@@ -9,6 +9,10 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end("<h1>About Page</h1>");
   }
+  if (req.url === "/contect") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("<h3>Contect Us Now</h3>");
+  }
 });
 
 server.listen(3000, () => {
