@@ -1,0 +1,23 @@
+{
+  "name": "node",
+  "version": "1.0.0",
+  "description": "node and express",
+  "main": "Web-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HaiderAliGill/Node.git"
+  },
+  "author": "Haider Ali Gill",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HaiderAliGill/Node/issues"
+  },
+  "homepage": "https://github.com/HaiderAliGill/Node#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

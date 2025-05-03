@@ -1,20 +1,22 @@
-const http = require("http");
+import http from 'http';
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end("<h1>Hello Haider G</h1>");
-  }
-  if (req.url === "/about") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end("<h1>About Page</h1>");
-  }
-  if (req.url === "/contect") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end("<h3>Contect Us Now</h3>");
-  }
+  res.setHeader('Content-Type', 'text/html');
+  
+  const routes = {
+    '/': '<h1>Hello Haider Gill hh G</h1>',
+    '/about': '<h1>About Page</h1>',
+    '/contact': '<h3>Contact Us Now</h3>'
+  };
+
+  const response = routes[req.url] || '<h1>404 Not Found</h1>';
+  const statusCode = req.url in routes ? 200 : 404;
+  
+  res.writeHead(statusCode);
+  res.end(response);
 });
 
-server.listen(3000, () => {
-  console.log("Server is running at http://localhost:3000");
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
