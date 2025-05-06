@@ -1,4 +1,3 @@
-2
 
 import fs from 'fs';
 import readline from 'readline';
@@ -13,6 +12,7 @@ const filePath = './todolist.json';
 
 // Load existing todos or initialize an empty list
 let todos = [];
+
 if (fs.existsSync(filePath)) {
     const data = fs.readFileSync(filePath, 'utf8');
     todos = JSON.parse(data);
@@ -76,6 +76,10 @@ function mainMenu() {
                 break;
             case '4':
                 console.log('Goodbye!');
+                rl.close();
+                break;
+            case '5':
+                console.log('Goodbye sfdgfd!');
                 rl.close();
                 break;
             default:
