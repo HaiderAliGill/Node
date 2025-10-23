@@ -21,7 +21,7 @@ https.get(
     response.on("end", () => {
       try {
         const exchangeData = JSON.parse(data).conversion_rates;
-        // console.log(exchangeData);
+        console.log(exchangeData);
 
         rl.question(
           chalk.blue("Enter the amount in USD you want to convert: "),
