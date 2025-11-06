@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini URL Shortener — Single File</title>
+  <meta name="description" content="Client-side URL shortener (HTML/CSS/JS). Stores data in localStorage and supports hash-based redirects."/>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa6b2;
+      --accent:#7c5cff;
+      --accent-2:#00c2a8;
+      --glass: rgba(255,255,255,0.03);
+      --success:#16a34a;
+      --danger:#ef4444;
+      --radius:14px;
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(124,92,255,0.08), transparent 8%),
+        radial-gradient(900px 400px at 95% 85%, rgba(0,194,168,0.06), transparent 10%),
+        var(--bg);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:32px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      gap:24px;
+      font-size:16px;
+      line-height:1.4;
+    }
+
+    .container{
+      width:100%;
+      max-width:980px;
+    }
+
+    header{
+      display:flex;
+      gap:16px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .logo{
+      width:64px;height:64px;
+      border-radius:12px;
+      background: linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:grid;place-items:center;
+      box-shadow:0 6px 30px rgba(124,92,255,0.12), inset 0 -8px 30px rgba(255,255,255,0.03);
+      font-weight:700;
+      font-size:18px;
+      color:white;
+    }
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+    }
+
+    @media (max-width:980px){
+      .grid{grid-template-columns: 1fr; }
+      .right-col{order:2}
+    }
+
+    form.row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    input[type="url"], input[type="text"]{
+      flex:1;
+      padding:12px 14px;
+      border-radius:12px;
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.04);
+      color:inherit;
+      outline:none;
+      font-size:15px;
+    }
+
+    input::placeholder{color:rgba(230,238,246,0.45)}
+    label.small{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      background:linear-gradient(180deg,var(--accent), #5b44e0);
+      border: none;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 8px 22px rgba(124,92,255,0.12);
+      transition:transform .12s ease, box-shadow .12s;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .result{
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    .shortOutput{
+      font-weight:700;
+      word-break:break-all;
+      color:#dfe9ff;
+      flex:1;
+    }
+
+    .muted{color:var(--muted);font-size:13px}
+
+    .history{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:360px;
+      overflow:auto;
+      padding-right:6px;
+    }
+
+    .item{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      border-radius:10px;
+      background:rgba(255,255,255,0.012);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .item .meta{flex:1;overflow:hidden}
+    .item .meta .long{font-size:13px;color:var(--muted);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+    .item .meta .code{font-weight:700;color:#f0f8ff;font-size:14px}
+
+    .btn.small{
+      padding:8px 10px;font-size:13px;border-radius:10px;
+    }
+    .actions{display:flex; gap:8px; align-items:center}
+
+    .tag{
+      display:inline-block;padding:6px 8px;border-radius:8px;font-size:12px;background:rgba(255,255,255,0.02);
+      color:var(--muted);border:1px solid rgba(255,255,255,0.02)
+    }
+
+    .note{font-size:13px;color:var(--muted);margin-top:8px}
+
+    .empty{
+      padding:26px;border-radius:12px;border:1px dashed rgba(255,255,255,0.03);text-align:center;color:var(--muted)
+    }
+
+    footer{
+      margin-top:14px;color:var(--muted);font-size:13px;text-align:center;
+    }
+
+    .small-input{
+      padding:9px 10px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);font-size:14px;color:inherit;
+    }
+
+    .danger{color:var(--danger)}
+    .success{color:var(--success)}
+    .flex-row{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <main class="container" role="main">
+    <header>
+      <div class="logo">URL</div>
+      <div>
+        <h1>Mini URL Shortener</h1>
+        <p class="lead">Shorten links quickly — stores history in your browser. Works offline and portable as a single HTML file.</p>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- LEFT: Shortener form + history -->
+      <div class="card">
+        <label class="small">Enter a long URL</label>
+        <form id="shortenForm" class="row" onsubmit="return false" aria-label="Shorten URL form">
+          <input id="longUrl" type="url" placeholder="https://example.com/very/long/url" required />
+          <button id="shortenBtn" class="btn" type="button">Shorten</button>
+        </form>
+
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <div style="flex:1">
+            <label class="small">Custom alias (optional)</label>
+            <input id="customAlias" type="text" placeholder="my-link (letters, numbers, -, _)" class="small-input" />
+          </div>
+          <div style="width:160px">
+            <label class="small">Expire (days)</label>
+            <input id="expiryDays" type="number" min="0" step="1" value="0" class="small-input" />
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">0 = never expire</div>
+          </div>
+        </div>
+
+        <div id="resultArea" aria-live="polite"></div>
+
+        <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">
+          <div class="muted">Saved Links</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="clearExpired" class="btn secondary small">Clear expired</button>
+            <button id="clearAll" class="btn secondary small">Clear all</button>
+          </div>
+        </div>
+
+        <div id="history" class="history" aria-live="polite" style="margin-top:10px"></div>
+      </div>
+
+      <!-- RIGHT: Help and details -->
+      <aside class="card right-col">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div class="tag">Client-only</div>
+            <div style="font-weight:700;margin-top:8px">How it works</div>
+          </div>
+        </div>
+
+        <p class="note">This page creates short links that are stored in your browser using <code>localStorage</code>. Short links are shareable as <strong>this-page-url#/s/yourcode</strong>. When that link is opened, this page will redirect to the original destination (hash-based redirect).</p>
+
+        <div style="margin-top:12px">
+          <div style="font-weight:700;margin-bottom:6px">Tips</div>
+          <ul style="margin:0;padding-left:18px;color:var(--muted);">
+            <li>Host this file (or keep it somewhere reachable) to share short links reliably.</li>
+            <li>Custom alias must be unique. Allowed: letters, numbers, dash (-), underscore (_).</li>
+            <li>Expiry set in days. 0 = never expire.</li>
+          </ul>
+        </div>
+
+        <div style="margin-top:16px">
+          <div style="font-weight:700;margin-bottom:6px">Security</div>
+          <p class="muted" style="margin:0">This app does not transmit your URLs anywhere — they remain in the browser. If you need a server-hosted shortener, you'll need backend code & a domain.</p>
+        </div>
+
+        <div style="margin-top:18px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+          <div class="muted">Version: <strong>1.0</strong></div>
+          <div style="font-size:13px;color:var(--muted)">Made with ♥</div>
+        </div>
+      </aside>
+    </section>
+
+    <footer>
+      <div>Made for quick demos — copy this file to your server or open locally.</div>
+    </footer>
+  </main>
+
+  <script>
+    // ---------------------------
+    // Storage schema (in localStorage)
+    // key: "mini-url-shortener:v1"
+    // value: JSON array of items with:
+    // { code, longUrl, alias (same as code if custom), createdAt (ms), expiryAt (ms|null) }
+    // ---------------------------
+
+    const STORAGE_KEY = 'mini-url-shortener:v1';
+
+    // Utility: load storage
+    function loadLinks(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        return JSON.parse(raw);
+      } catch(e){
+        console.error('Failed reading storage', e);
+        return [];
+      }
+    }
+
+    function saveLinks(list){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    // Validate URL (must include scheme)
+    function isValidUrl(value){
+      try {
+        const u = new URL(value);
+        // Only allow http(s)
+        return (u.protocol === 'http:' || u.protocol === 'https:');
+      } catch(e){
+        return false;
+      }
+    }
+
+    // Short code generator: base62 (letters+numbers), 6 chars default
+    function generateCode(length = 6){
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let out = '';
+      for(let i=0;i<length;i++){
+        out += chars.charAt(Math.floor(Math.random()*chars.length));
+      }
+      return out;
+    }
+
+    // Check alias validity
+    function isValidAlias(alias){
+      // allow letters, numbers, - and _
+      return /^[A-Za-z0-9\-_]{2,64}$/.test(alias);
+    }
+
+    // Build short URL string for display
+    function buildShortUrl(code){
+      // Use location origin + pathname + hash-style: #/s/{code}
+      // If file is opened via file://, location.origin = "null", but location.href works fine.
+      const base = location.origin === 'null' ? location.href.split('#')[0] : (location.origin + location.pathname);
+      // Ensure no trailing slash duplication
+      const normalized = base.replace(/\/+$/, '');
+      return normalized + '#/s/' + encodeURIComponent(code);
+    }
+
+    // Create a new short entry
+    function createShort(longUrl, customAlias, expiryDays){
+      const list = loadLinks();
+
+      let code;
+      if (customAlias){
+        // ensure alias validity and uniqueness
+        if (!isValidAlias(customAlias)) {
+          throw new Error('Custom alias invalid. Use letters, numbers, - or _. 2-64 chars.');
+        }
+        const exists = list.find(it => it.code.toLowerCase() === customAlias.toLowerCase() || (it.alias && it.alias.toLowerCase() === customAlias.toLowerCase()));
+        if (exists) throw new Error('Alias already in use. Choose another.');
+        code = customAlias;
+      } else {
+        // generate candidate until unique (usually first try)
+        do { code = generateCode(6); } while (list.some(it => it.code === code));
+      }
+
+      const now = Date.now();
+      let expiryAt = null;
+      if (expiryDays && Number(expiryDays) > 0){
+        expiryAt = now + Number(expiryDays) * 24 * 60 * 60 * 1000;
+      }
+
+      const entry = { code, longUrl, alias: code, createdAt: now, expiryAt };
+      list.unshift(entry); // newest first
+      saveLinks(list);
+      return entry;
+    }
+
+    // Remove expired items from storage and return count removed
+    function clearExpired(){
+      const list = loadLinks();
+      const now = Date.now();
+      const filtered = list.filter(it => !it.expiryAt || it.expiryAt > now);
+      saveLinks(filtered);
+      return list.length - filtered.length;
+    }
+
+    // Delete a specific code
+    function deleteCode(code){
+      const list = loadLinks();
+      const filtered = list.filter(it => it.code !== code);
+      saveLinks(filtered);
+    }
+
+    // Render UI
+    const historyEl = document.getElementById('history');
+    const resultArea = document.getElementById('resultArea');
+
+    function timeAgo(ms){
+      if (!ms) return 'never';
+      const diff = Date.now() - ms;
+      const s = Math.floor(diff/1000);
+      if (s < 60) return s + 's ago';
+      const m = Math.floor(s/60);
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m/60);
+      if (h < 24) return h + 'h ago';
+      const d = Math.floor(h/24);
+      return d + 'd ago';
+    }
+
+    function renderHistory(){
+      const list = loadLinks();
+      const now = Date.now();
+      historyEl.innerHTML = '';
+      if (!list.length){
+        historyEl.innerHTML = '<div class="empty">No shortened links yet. Shorten a URL above to see history.</div>';
+        return;
+      }
+
+      for(const item of list){
+        const expired = item.expiryAt && item.expiryAt <= now;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'item';
+        wrapper.setAttribute('data-code', item.code);
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const codeLine = document.createElement('div');
+        codeLine.className = 'code';
+        codeLine.textContent = buildShortUrl(item.code);
+        const longLine = document.createElement('div');
+        longLine.className = 'long';
+        longLine.textContent = item.longUrl;
+
+        meta.appendChild(codeLine);
+        meta.appendChild(longLine);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        // Open button
+        const openBtn = document.createElement('button');
+        openBtn.className = 'btn small';
+        openBtn.title = 'Open original URL';
+        openBtn.textContent = 'Open';
+        openBtn.onclick = () => window.open(item.longUrl, '_blank');
+
+        // Copy button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn small secondary';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = async () => {
+          try{
+            await navigator.clipboard.writeText(buildShortUrl(item.code));
+            copyBtn.textContent = 'Copied';
+            setTimeout(()=> copyBtn.textContent = 'Copy', 1400);
+          }catch(e){
+            alert('Clipboard not available. Manual copy: ' + buildShortUrl(item.code));
+          }
+        };
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn small secondary';
+        delBtn.textContent = 'Delete';
+        delBtn.onclick = () => {
+          if (!confirm('Delete this short link?')) return;
+          deleteCode(item.code);
+          renderHistory();
+        };
+
+        // Expiry info
+        const rightInfo = document.createElement('div');
+        rightInfo.style.textAlign='right';
+        rightInfo.style.minWidth='120px';
+        const created = document.createElement('div');
+        created.className = 'muted';
+        created.textContent = 'Created ' + timeAgo(item.createdAt);
+        rightInfo.appendChild(created);
+        const exp = document.createElement('div');
+        exp.style.fontSize='13px';
+        exp.style.color = expired ? 'var(--danger)' : 'var(--muted)';
+        exp.textContent = expired ? 'EXPIRED' : (item.expiryAt ? ('Expires in ' + Math.max(0, Math.ceil((item.expiryAt - now)/(24*60*60*1000))) + 'd') : 'Never expire');
+        rightInfo.appendChild(exp);
+
+        actions.appendChild(openBtn);
+        actions.appendChild(copyBtn);
+        actions.appendChild(delBtn);
+
+        if (expired) {
+          // style faded
+          wrapper.style.opacity = 0.45;
+        }
+
+        wrapper.appendChild(meta);
+        wrapper.appendChild(actions);
+        wrapper.appendChild(rightInfo);
+
+        historyEl.appendChild(wrapper);
+      }
+    }
+
+    // Show result UI after shortening
+    function showResult(entry){
+      resultArea.innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'result';
+
+      const left = document.createElement('div');
+      left.className = 'shortOutput';
+      left.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:6px">Short URL</div>
+        <div>${buildShortUrl(entry.code)}</div>`;
+
+      const right = document.createElement('div');
+      right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn small';
+      copyBtn.textContent = 'Copy';
+      copyBtn.onclick = async () => {
+        try{
+          await navigator.clipboard.writeText(buildShortUrl(entry.code));
+          copyBtn.textContent = 'Copied';
+          setTimeout(()=> copyBtn.textContent = 'Copy', 1400);
+        }catch(e){
+          alert('Cannot access clipboard. URL: ' + buildShortUrl(entry.code));
+        }
+      };
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn small secondary';
+      openBtn.textContent = 'Open';
+      openBtn.onclick = () => window.open(entry.longUrl, '_blank');
+
+      right.appendChild(copyBtn);
+      right.appendChild(openBtn);
+
+      box.appendChild(left);
+      box.appendChild(right);
+      resultArea.appendChild(box);
+    }
+
+    // Form handlers
+    document.getElementById('shortenBtn').addEventListener('click', ()=>{
+      const longUrl = document.getElementById('longUrl').value.trim();
+      const customAlias = document.getElementById('customAlias').value.trim();
+      const expiryDays = document.getElementById('expiryDays').value;
+
+      // Validation
+      if (!longUrl){
+        alert('Please enter a URL to shorten.');
+        return;
+      }
+      if (!isValidUrl(longUrl)){
+        alert('Invalid URL. Make sure it begins with http:// or https://');
+        return;
+      }
+      if (customAlias && !isValidAlias(customAlias)){
+        alert('Custom alias invalid. Use only letters, numbers, dash (-), underscore (_), 2-64 chars.');
+        return;
+      }
+
+      try{
+        const entry = createShort(longUrl, customAlias || null, Number(expiryDays) || 0);
+        renderHistory();
+        showResult(entry);
+        // Clear long url but keep custom alias for chaining
+        document.getElementById('longUrl').value = '';
+      } catch(e){
+        alert(e.message || 'Failed to create short link.');
+        console.error(e);
+      }
+    });
+
+    document.getElementById('clearExpired').addEventListener('click', ()=>{
+      const removed = clearExpired();
+      if (removed > 0) alert('Removed ' + removed + ' expired link(s).');
+      renderHistory();
+    });
+
+    document.getElementById('clearAll').addEventListener('click', ()=>{
+      if (!confirm('Remove all saved links? This cannot be undone.')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      renderHistory();
+      resultArea.innerHTML = '';
+    });
+
+    // On load, handle hash-based redirect and render list
+    function handleHashRedirect(){
+      // Expect hash forms like: #/s/<code>
+      const hash = location.hash || '';
+      const m = hash.match(/^#\/s\/(.+)$/);
+      if (m && m[1]){
+        const code = decodeURIComponent(m[1]);
+        const list = loadLinks();
+        const item = list.find(it => it.code === code);
+        if (item){
+          // check expiry
+          if (item.expiryAt && item.expiryAt <= Date.now()){
+            alert('This short link has expired.');
+            // optionally remove expired
+            // deleteCode(code);
+            return;
+          }
+          // redirect
+          // Use full URL as is; open in same tab
+          window.location.replace(item.longUrl);
+          return;
+        } else {
+          // Not found locally. Inform user.
+          setTimeout(()=> alert('Short code not found in this browser. Short links created here are stored in your browser\'s localStorage.'), 200);
+        }
+      }
+    }
+
+    // Initialize UI on DOM ready
+    document.addEventListener('DOMContentLoaded', ()=>{
+      renderHistory();
+      handleHashRedirect();
+
+      // If user pastes a URL into the page directly, you can support drag/drop or detect pasted URL into page; optional feature
+      // Enable Enter to submit in longUrl input
+      const longInput = document.getElementById('longUrl');
+      longInput.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter') document.getElementById('shortenBtn').click();
+      });
+
+      // Pre-fill with example placeholder for convenience
+      // (No-op) - left intentionally blank
+    });
+
+    // Also handle hashchange (if user opens with hash later)
+    window.addEventListener('hashchange', handleHashRedirect, false);
+
+  </script>
+</body>
+</html>
