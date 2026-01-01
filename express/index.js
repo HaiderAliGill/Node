@@ -1,15 +1,15 @@
 import express from "express";
+import { PORT } from "./evn.js";
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+// 🔥 static files serve karne ke liye
+app.use(express.static("public"));
 
-app.get("/", (req, res) => {
-  res.send("Hi Haider Gill First Page");
-});
-
-app.get("/about", (req, res) => {
-  res.send("This is About Page");
+app.get("/profile/:username/article/:slug", (req, res) => {
+  console.log(req.params)
+  const remodash = req.params.slug.replace(/-/g, " ");
+  res.send(`This is Articale Page of ${req.params.username} with slug ${remodash}`);
 });
 
 app.get("/contact", (req, res) => {
@@ -17,5 +17,5 @@ app.get("/contact", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
